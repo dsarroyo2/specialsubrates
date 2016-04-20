@@ -2,45 +2,19 @@
 library (rensembl)
 library (rrelrates) #In order for rrelrates to work (new version), I installed biomaRt and GO.db.
 
+#set your working directory to whatever you need. The example below is how I did it.
 setwd("/Users/dianaarroyo/Documents/DianasDocuments/ASU/CartwrightLab/HONORSTHESIS/Code/")
 
+#toycatch, gsbincatch, and avoidcatch were other .R files used.
+#They basically have functions that allow for a cleaner version of rprogress4.R.
 source("toycatch.R") #toycatch.R contains the function getseqs2
 source("gsbincatch.R")
 source("avoidcatch.R")
-
-raxtrees <- function(alignment) {
-  if(is.null(alignment)){
-    return(NULL)
-  }
-  p <- sample(1:1000, 1)
-  x <- sample(1:1000, 1)
-  {
-    out <- tryCatch(
-     raxml(alignment, m = "GTRGAMMA", f = "a", N = 10, p = p, x = x, exec = "/Users/dianaarroyo/Documents/DianasDocuments/ASU/CartwrightLab/HONORSTHESIS/Code/raxmlHPC-AVX-v8/raxml", threads=2)$bestTree
-     ,
-     error=function(cond) {
-       return(NULL)
-      }
-    )
-    return(out)
-  }
-}
+source("raxtreessource.R")
+source("extractbranchlengths.R")
 
 coeffv <-function(x){
   (sqrt(x$var)/x$mean)*100
-}
-
-extract_branchlengths <- function(suminfo_result){
-  if(length(suminfo_result) > 2){
-    res <- suminfo_result[1:(length(suminfo_result)-2)]
-    #THIS IS A HORRIBLE HACK THAT DAVID DID. FIX SUMINFO FXN SO
-    #THAT THE NAMES CANT BE NA. SORRY. -DAVID.
-    old_names <- names(res)
-    names(res) <- ifelse(is.na(old_names), "nope_nope_nope", old_names) 
-    names(res) <- sapply(str_split(names(res), "_"), "[[", 3)
-    return(res)
-  }
-  return(list())
 }
 
 #----------------------------------------------------------------
@@ -60,11 +34,13 @@ lspecies <- c('homo_sapiens','pan_troglodytes', 'pan_paniscus', 'gorilla_gorilla
 gs2 <- lapply(genes, getseq2)
 save(gs2, file="gs2.rda")
 #load("/Users/dianaarroyo/Documents/DianasDocuments/ASU/CartwrightLab/HONORSTHESIS/Code/gs2.rda")
+#Once you have saved the file, you can always load it back instead of doing gs2 again.
 
 #gsbincatch.R stuff
 gsbin <- lapply(gs2, gs3)
 save(gsbin, file="gsbin.rda")
 #load("/Users/dianaarroyo/Documents/DianasDocuments/ASU/CartwrightLab/HONORSTHESIS/Code/gsbin.rda")
+#Once you have saved the file, you can always load it back instead of doing gsbin again.
 
 #----------------------------------------------------------------
 #Build Trees
@@ -88,6 +64,10 @@ finalrates <-lapply(filtertrees, geneinfo)
 names(finalrates) <-awesomegenes[!nulltrees]
 sff <- mapply(suminfo, finalrates, filtertrees, SIMPLIFY=FALSE)
 
+#At this point, one can print the new trees.
+#Used " plot(filtertrees[[9]]) " for ATP2B2.
+#Same thing for FOXF1 with [[43]].
+#Same thing for IGFBP5 with [[58]].
 #----------------------------------------------------------------
 #Coefficient of variation
 sapply(sff, coeffv)
